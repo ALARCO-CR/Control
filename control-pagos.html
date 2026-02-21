@@ -1,0 +1,663 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+  <meta name="theme-color" content="#4338CA" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Control Pagos" />
+  <title>Control de Pagos</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%234338CA'/><path d='M28 52L42 66L72 36' stroke='white' stroke-width='10' stroke-linecap='round' stroke-linejoin='round' fill='none'/></svg>" />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=DM+Serif+Display&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'DM Sans', 'Segoe UI', sans-serif;
+      background: #FAF9F6;
+      color: #1F2937;
+      min-height: 100vh;
+      -webkit-tap-highlight-color: transparent;
+    }
+    button { cursor: pointer; font-family: inherit; }
+    input, select { font-family: inherit; }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+    @keyframes slideDown {
+      from { opacity: 0; transform: translateY(-10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes checkPop {
+      0% { transform: scale(1); }
+      40% { transform: scale(1.25); }
+      100% { transform: scale(1); }
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes bannerSlide {
+      from { opacity: 0; transform: translateY(-100%); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Header */
+    .header {
+      background: linear-gradient(160deg, #312E81 0%, #4338CA 50%, #6366F1 100%);
+      padding: 36px 24px 28px;
+      color: white;
+    }
+    .header-inner { max-width: 600px; margin: 0 auto; }
+    .header h1 {
+      font-family: 'DM Serif Display', serif;
+      font-size: 28px; font-weight: 400;
+      letter-spacing: -0.02em; margin-bottom: 4px;
+    }
+    .header .subtitle { font-size: 13px; opacity: 0.75; }
+
+    /* Month nav */
+    .month-nav {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-top: 24px; background: rgba(255,255,255,0.12);
+      border-radius: 12px; padding: 8px 6px;
+    }
+    .month-nav button {
+      background: rgba(255,255,255,0.1); border: none; color: white;
+      width: 36px; height: 36px; border-radius: 8px; font-size: 18px;
+      display: flex; align-items: center; justify-content: center;
+      transition: background 0.2s;
+    }
+    .month-nav button:hover { background: rgba(255,255,255,0.2); }
+    .month-label { text-align: center; }
+    .month-label .name { font-size: 18px; font-weight: 600; }
+    .month-label .badge {
+      font-size: 10px; text-transform: uppercase;
+      letter-spacing: 0.1em; opacity: 0.7; margin-top: 2px;
+    }
+
+    /* Progress */
+    .progress-section { margin-top: 20px; }
+    .progress-labels {
+      display: flex; justify-content: space-between;
+      font-size: 12px; margin-bottom: 8px; opacity: 0.85;
+    }
+    .progress-bar {
+      height: 6px; background: rgba(255,255,255,0.2);
+      border-radius: 3px; overflow: hidden;
+    }
+    .progress-fill {
+      height: 100%; border-radius: 3px;
+      transition: width 0.5s ease;
+    }
+    .all-done {
+      text-align: center; font-size: 13px;
+      margin-top: 10px; animation: fadeIn 0.5s ease;
+    }
+
+    /* Main content */
+    .main { max-width: 600px; margin: 0 auto; padding: 20px 16px 60px; }
+
+    /* Carry over alert */
+    .carry-alert {
+      background: #FEF3C7; border: 1px solid #FDE68A;
+      border-radius: 10px; padding: 12px 16px; margin-bottom: 16px;
+      display: flex; align-items: center; gap: 10px;
+      animation: fadeIn 0.3s ease;
+    }
+    .carry-alert .icon { font-size: 20px; }
+    .carry-alert .title { font-size: 13px; font-weight: 600; color: #92400E; }
+    .carry-alert .detail { font-size: 12px; color: #B45309; margin-top: 2px; }
+
+    /* Banner */
+    .banner {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+      background: linear-gradient(135deg, #FEF3C7, #FDE68A);
+      padding: 14px 20px;
+      display: flex; align-items: center; justify-content: center; gap: 10px;
+      border-bottom: 2px solid #F59E0B;
+      animation: bannerSlide 0.4s ease-out;
+      font-size: 14px; font-weight: 500; color: #92400E;
+    }
+    .banner button {
+      background: none; border: none; color: #92400E;
+      font-size: 18px; padding: 4px; margin-left: 8px;
+    }
+    .banner.hidden { display: none; }
+
+    /* Category header */
+    .cat-header {
+      display: flex; align-items: center; gap: 8px;
+      margin-bottom: 10px; padding-left: 2px;
+    }
+    .cat-dot { width: 8px; height: 8px; border-radius: 50%; }
+    .cat-label {
+      font-size: 12px; font-weight: 600; text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+    .cat-line { flex: 1; height: 1px; opacity: 0.25; }
+
+    /* Task row */
+    .task-row {
+      display: flex; align-items: center;
+      padding: 14px 16px; margin-bottom: 6px;
+      border-radius: 10px; transition: all 0.3s ease;
+      position: relative; overflow: hidden;
+      animation: fadeIn 0.3s ease both;
+    }
+    .task-row.done { background: #F9FAFB; }
+    .task-row:not(.done) { background: white; }
+    .carry-stripe {
+      position: absolute; top: 0; left: 0;
+      width: 3px; height: 100%; background: #F59E0B;
+    }
+
+    /* Checkbox */
+    .checkbox {
+      width: 26px; height: 26px; border-radius: 7px;
+      display: flex; align-items: center; justify-content: center;
+      margin-right: 14px; flex-shrink: 0;
+      transition: all 0.2s ease; border: none;
+    }
+    .checkbox.unchecked { background: white; }
+    .checkbox.animating { animation: checkPop 0.4s ease; }
+
+    .task-info { flex: 1; min-width: 0; }
+    .task-name { font-size: 14px; font-weight: 500; transition: color 0.3s; }
+    .task-name.done { color: #9CA3AF; text-decoration: line-through; }
+    .task-name:not(.done) { color: #1F2937; }
+    .task-date { font-size: 11px; color: #9CA3AF; margin-top: 2px; }
+    .task-carry { font-size: 11px; color: #D97706; margin-top: 2px; }
+
+    /* Edit button */
+    .edit-btn {
+      background: none; border: none; color: #D1D5DB;
+      padding: 4px 8px; font-size: 13px; line-height: 1;
+      transition: color 0.2s; flex-shrink: 0;
+    }
+    .edit-btn:hover { color: #818CF8; }
+
+    /* Status badge */
+    .badge {
+      font-size: 10px; font-weight: 600;
+      padding: 4px 10px; border-radius: 20px;
+      text-transform: uppercase; letter-spacing: 0.04em;
+      flex-shrink: 0;
+    }
+    .badge.paid { background: #ECFDF5; color: #065F46; }
+    .badge.pending { background: #FEF3C7; color: #92400E; }
+
+    /* Edit form */
+    .edit-form {
+      padding: 14px 16px; margin-bottom: 6px;
+      background: white; border: 2px solid #818CF8;
+      border-radius: 10px; animation: slideDown 0.3s ease;
+    }
+    .edit-form input {
+      width: 100%; padding: 8px 12px; border: 1.5px solid #E5E7EB;
+      border-radius: 7px; font-size: 14px; outline: none;
+      margin-bottom: 10px; transition: border-color 0.2s;
+    }
+    .edit-form input:focus { border-color: #818CF8; }
+    .cat-pills { display: flex; gap: 5px; flex-wrap: wrap; margin-bottom: 12px; }
+    .cat-pill {
+      padding: 5px 12px; border-radius: 16px; font-size: 11px;
+      font-weight: 500; transition: all 0.2s;
+    }
+    .edit-actions { display: flex; gap: 6px; }
+    .btn-save {
+      flex: 1; padding: 8px 0; background: #4338CA;
+      color: white; border: none; border-radius: 7px;
+      font-size: 12px; font-weight: 600; transition: background 0.2s;
+    }
+    .btn-save:hover { background: #3730A3; }
+    .btn-cancel {
+      padding: 8px 16px; background: #F3F4F6;
+      color: #6B7280; border: none; border-radius: 7px;
+      font-size: 12px; font-weight: 500; transition: background 0.2s;
+    }
+    .btn-cancel:hover { background: #E5E7EB; }
+    .btn-delete {
+      padding: 8px 16px; background: #FEF2F2;
+      color: #EF4444; border: 1px solid #FECACA; border-radius: 7px;
+      font-size: 12px; font-weight: 500; transition: all 0.2s;
+    }
+    .btn-delete:hover { background: #FEE2E2; border-color: #FCA5A5; }
+
+    /* Add task */
+    .add-form {
+      background: white; border: 1.5px solid #E5E7EB;
+      border-radius: 12px; padding: 20px; margin-top: 8px;
+      animation: slideDown 0.3s ease;
+    }
+    .add-form .title { font-size: 14px; font-weight: 600; margin-bottom: 14px; color: #374151; }
+    .add-form input {
+      width: 100%; padding: 10px 14px; border: 1.5px solid #E5E7EB;
+      border-radius: 8px; font-size: 14px; outline: none;
+      transition: border-color 0.2s; margin-bottom: 10px;
+    }
+    .add-form input:focus { border-color: #818CF8; }
+    .add-pills { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 14px; }
+    .add-pill {
+      padding: 6px 14px; border-radius: 20px; font-size: 12px;
+      font-weight: 500; transition: all 0.2s;
+    }
+    .add-actions { display: flex; gap: 8px; }
+    .btn-add {
+      flex: 1; padding: 10px 0; background: #4338CA;
+      color: white; border: none; border-radius: 8px;
+      font-size: 13px; font-weight: 600; transition: background 0.2s;
+    }
+    .btn-add:hover { background: #3730A3; }
+    .btn-add-cancel {
+      padding: 10px 20px; background: #F3F4F6;
+      color: #6B7280; border: none; border-radius: 8px;
+      font-size: 13px; font-weight: 500; transition: background 0.2s;
+    }
+    .btn-add-cancel:hover { background: #E5E7EB; }
+
+    .add-trigger {
+      width: 100%; padding: 14px;
+      border: 2px dashed #D1D5DB; border-radius: 10px;
+      background: transparent; color: #9CA3AF;
+      font-size: 13px; font-weight: 500; margin-top: 8px;
+      transition: all 0.2s; display: flex;
+      align-items: center; justify-content: center; gap: 6px;
+    }
+    .add-trigger:hover { border-color: #818CF8; color: #4338CA; }
+
+    /* Bottom actions */
+    .bottom-actions {
+      display: flex; gap: 8px; margin-top: 24px;
+      padding-top: 20px; border-top: 1px solid #E5E7EB;
+    }
+    .btn-reset {
+      flex: 1; padding: 10px 0; background: white;
+      border: 1.5px solid #E5E7EB; border-radius: 8px;
+      font-size: 12px; font-weight: 500; color: #6B7280;
+      transition: all 0.2s;
+    }
+    .btn-reset:hover { border-color: #F87171; color: #EF4444; }
+    .btn-today {
+      flex: 1; padding: 10px 0; border: none; border-radius: 8px;
+      font-size: 12px; font-weight: 500; transition: all 0.2s;
+    }
+
+    /* Summary */
+    .summary {
+      margin-top: 24px; padding: 16px 20px;
+      background: linear-gradient(135deg, #EEF2FF, #E0E7FF);
+      border-radius: 12px;
+      display: flex; justify-content: space-around; text-align: center;
+    }
+    .summary .num { font-size: 24px; font-weight: 700; }
+    .summary .label { font-size: 11px; font-weight: 500; }
+    .summary .divider { width: 1px; background: #C7D2FE; }
+  </style>
+</head>
+<body>
+
+<div id="app"></div>
+
+<script>
+// ============ DATA ============
+const MONTHS = ["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
+
+const DEFAULT_TASKS = [
+  { id: "tel", name: "Pago de Teléfono", category: "servicios" },
+  { id: "local", name: "Pago de Local", category: "alquiler" },
+  { id: "luz", name: "Pago de Luz", category: "servicios" },
+  { id: "agua", name: "Pago de Agua", category: "servicios" },
+  { id: "kinder", name: "Pago de Kínder", category: "educación" },
+  { id: "planilla-ccss", name: "Planilla CCSS", category: "planillas" },
+  { id: "planilla-ins", name: "Planilla INS", category: "planillas" },
+  { id: "pago-ccss", name: "Pago CCSS", category: "planillas" },
+];
+
+const CATS = {
+  servicios: { bg: "#EEF2FF", border: "#818CF8", text: "#4338CA", dot: "#6366F1", label: "Servicios" },
+  alquiler: { bg: "#FEF3C7", border: "#F59E0B", text: "#92400E", dot: "#F59E0B", label: "Alquiler" },
+  educación: { bg: "#ECFDF5", border: "#34D399", text: "#065F46", dot: "#10B981", label: "Educación" },
+  planillas: { bg: "#FFF1F2", border: "#FB7185", text: "#9F1239", dot: "#F43F5E", label: "Planillas" },
+  otro: { bg: "#F3F4F6", border: "#9CA3AF", text: "#374151", dot: "#6B7280", label: "Otro" },
+};
+
+// ============ STORAGE ============
+function load(key) {
+  try { const r = localStorage.getItem(key); return r ? JSON.parse(r) : null; } catch { return null; }
+}
+function save(key, val) {
+  try { localStorage.setItem(key, JSON.stringify(val)); } catch(e) { console.error(e); }
+}
+
+// ============ MONTH HELPERS ============
+function currentMonthKey() {
+  const d = new Date();
+  return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0');
+}
+function monthLabel(k) {
+  const [y,m] = k.split('-');
+  return MONTHS[parseInt(m,10)-1] + ' ' + y;
+}
+function prevMonth(k) {
+  let [y,m] = k.split('-').map(Number);
+  if (m===1) return (y-1)+'-12';
+  return y+'-'+String(m-1).padStart(2,'0');
+}
+function nextMonth(k) {
+  let [y,m] = k.split('-').map(Number);
+  if (m===12) return (y+1)+'-01';
+  return y+'-'+String(m+1).padStart(2,'0');
+}
+
+// ============ STATE ============
+let state = {
+  month: currentMonthKey(),
+  tasks: load('ctrl-tasks') || [...DEFAULT_TASKS],
+  monthData: {},
+  editingId: null,
+  editName: '',
+  editCategory: 'servicios',
+  showAdd: false,
+  newName: '',
+  newCat: 'servicios',
+  bannerCount: 0,
+  showBanner: false,
+};
+
+function initMonth() {
+  const saved = load('ctrl-month-' + state.month);
+  if (saved) {
+    state.monthData = saved;
+  } else {
+    const prev = load('ctrl-month-' + prevMonth(state.month));
+    const data = {};
+    let carried = 0;
+    state.tasks.forEach(t => {
+      const ps = prev?.[t.id];
+      if (ps && !ps.done) {
+        data[t.id] = { done: false, date: null, carriedOver: true };
+        carried++;
+      } else {
+        data[t.id] = { done: false, date: null, carriedOver: false };
+      }
+    });
+    state.monthData = data;
+    save('ctrl-month-' + state.month, data);
+    if (carried > 0) {
+      state.bannerCount = carried;
+      state.showBanner = true;
+      setTimeout(() => { state.showBanner = false; render(); }, 5000);
+    }
+  }
+}
+
+initMonth();
+
+// ============ ACTIONS ============
+function toggleTask(id) {
+  const cur = state.monthData[id] || { done: false, date: null };
+  state.monthData[id] = {
+    done: !cur.done,
+    date: !cur.done ? new Date().toLocaleDateString('es-CR') : null,
+    carriedOver: cur.carriedOver || false,
+  };
+  save('ctrl-month-' + state.month, state.monthData);
+  // Animate
+  render();
+  const el = document.querySelector(`[data-check="${id}"]`);
+  if (el) { el.classList.add('animating'); setTimeout(() => el.classList.remove('animating'), 400); }
+}
+
+function goMonth(dir) {
+  state.month = dir === 'prev' ? prevMonth(state.month) : nextMonth(state.month);
+  state.editingId = null;
+  state.showAdd = false;
+  initMonth();
+  render();
+}
+
+function addTask() {
+  if (!state.newName.trim()) return;
+  const id = 'custom-' + Date.now();
+  state.tasks.push({ id, name: state.newName.trim(), category: state.newCat });
+  save('ctrl-tasks', state.tasks);
+  state.monthData[id] = { done: false, date: null, carriedOver: false };
+  save('ctrl-month-' + state.month, state.monthData);
+  state.newName = ''; state.newCat = 'servicios'; state.showAdd = false;
+  render();
+}
+
+function removeTask(id) {
+  if (!confirm('¿Eliminar esta responsabilidad?')) return;
+  state.tasks = state.tasks.filter(t => t.id !== id);
+  save('ctrl-tasks', state.tasks);
+  delete state.monthData[id];
+  save('ctrl-month-' + state.month, state.monthData);
+  state.editingId = null;
+  render();
+}
+
+function startEdit(task) {
+  state.editingId = task.id;
+  state.editName = task.name;
+  state.editCategory = task.category || 'otro';
+  render();
+  const inp = document.querySelector('.edit-form input');
+  if (inp) inp.focus();
+}
+
+function saveEdit() {
+  if (!state.editName.trim()) return;
+  const t = state.tasks.find(t => t.id === state.editingId);
+  if (t) { t.name = state.editName.trim(); t.category = state.editCategory; }
+  save('ctrl-tasks', state.tasks);
+  state.editingId = null;
+  render();
+}
+
+function resetMonth() {
+  if (!confirm('¿Restablecer todas las tareas de este mes como pendientes?')) return;
+  const data = {};
+  state.tasks.forEach(t => { data[t.id] = { done: false, date: null, carriedOver: false }; });
+  state.monthData = data;
+  save('ctrl-month-' + state.month, data);
+  render();
+}
+
+function goToday() {
+  state.month = currentMonthKey();
+  state.editingId = null;
+  initMonth();
+  render();
+}
+
+// ============ RENDER ============
+function catPills(selected, prefix, onclick) {
+  return Object.entries(CATS).map(([key, c]) => {
+    const sel = selected === key;
+    return `<button class="cat-pill" onclick="${onclick}('${key}')" style="
+      border: ${sel ? '2px solid '+c.dot : '1.5px solid #E5E7EB'};
+      background: ${sel ? c.bg : 'white'};
+      color: ${sel ? c.text : '#6B7280'};
+    ">${c.label}</button>`;
+  }).join('');
+}
+
+function render() {
+  const isCurrent = state.month === currentMonthKey();
+  const completed = state.tasks.filter(t => state.monthData[t.id]?.done).length;
+  const pending = state.tasks.length - completed;
+  const progress = state.tasks.length > 0 ? (completed / state.tasks.length) * 100 : 0;
+  const carried = state.tasks.filter(t => state.monthData[t.id]?.carriedOver && !state.monthData[t.id]?.done);
+
+  // Group by category
+  const grouped = {};
+  state.tasks.forEach(t => {
+    const cat = t.category || 'otro';
+    if (!grouped[cat]) grouped[cat] = [];
+    grouped[cat].push(t);
+  });
+
+  let html = '';
+
+  // Banner
+  if (state.showBanner) {
+    html += `<div class="banner">
+      <span style="font-size:18px">⚠️</span>
+      ${state.bannerCount} ${state.bannerCount===1?'pago pendiente arrastrado':'pagos pendientes arrastrados'} del mes anterior
+      <button onclick="state.showBanner=false;render()">×</button>
+    </div>`;
+  }
+
+  // Header
+  html += `<div class="header"><div class="header-inner">
+    <h1>Control de Pagos</h1>
+    <p class="subtitle">Tus responsabilidades mensuales en un solo lugar</p>
+    <div class="month-nav">
+      <button onclick="goMonth('prev')">‹</button>
+      <div class="month-label">
+        <div class="name">${monthLabel(state.month)}</div>
+        ${isCurrent ? '<div class="badge">Mes actual</div>' : ''}
+      </div>
+      <button onclick="goMonth('next')">›</button>
+    </div>
+    <div class="progress-section">
+      <div class="progress-labels">
+        <span>${completed} completados</span>
+        <span>${pending} pendientes</span>
+      </div>
+      <div class="progress-bar">
+        <div class="progress-fill" style="width:${progress}%;background:${progress===100?'linear-gradient(90deg,#34D399,#10B981)':'linear-gradient(90deg,#FDE68A,#FBBF24)'}"></div>
+      </div>
+      ${progress===100?'<p class="all-done">✨ ¡Todo al día este mes!</p>':''}
+    </div>
+  </div></div>`;
+
+  // Main
+  html += '<div class="main">';
+
+  // Carried over alert
+  if (carried.length > 0) {
+    html += `<div class="carry-alert">
+      <span class="icon">📌</span>
+      <div>
+        <div class="title">Pendientes del mes anterior</div>
+        <div class="detail">${carried.map(t=>t.name).join(', ')}</div>
+      </div>
+    </div>`;
+  }
+
+  // Task groups
+  Object.entries(grouped).forEach(([cat, tasks]) => {
+    const c = CATS[cat] || CATS.otro;
+    html += `<div style="margin-bottom:20px">
+      <div class="cat-header">
+        <div class="cat-dot" style="background:${c.dot}"></div>
+        <span class="cat-label" style="color:${c.text}">${c.label}</span>
+        <div class="cat-line" style="background:${c.border}"></div>
+      </div>`;
+
+    tasks.forEach(task => {
+      const s = state.monthData[task.id] || { done: false, date: null };
+      const isEditing = state.editingId === task.id;
+
+      if (isEditing) {
+        html += `<div class="edit-form">
+          <input value="${state.editName.replace(/"/g,'&quot;')}" 
+            oninput="state.editName=this.value"
+            onkeydown="if(event.key==='Enter')saveEdit();if(event.key==='Escape'){state.editingId=null;render();}"
+            placeholder="Nombre..." />
+          <div class="cat-pills">${catPills(state.editCategory, 'edit', 'setEditCat')}</div>
+          <div class="edit-actions">
+            <button class="btn-save" onclick="saveEdit()">Guardar</button>
+            <button class="btn-cancel" onclick="state.editingId=null;render()">Cancelar</button>
+            <button class="btn-delete" onclick="state.editingId=null;removeTask('${task.id}')">Eliminar</button>
+          </div>
+        </div>`;
+      } else {
+        const borderColor = s.done ? '#E5E7EB' : (s.carriedOver ? '#FDE68A' : c.border + '40');
+        html += `<div class="task-row ${s.done?'done':''}" style="border:1.5px solid ${borderColor}">
+          ${s.carriedOver && !s.done ? '<div class="carry-stripe"></div>' : ''}
+          <button class="checkbox ${s.done?'':'unchecked'}" data-check="${task.id}"
+            style="${s.done 
+              ? 'background:linear-gradient(135deg,'+c.dot+','+c.border+')' 
+              : 'border:2px solid '+c.border+'80'}"
+            onclick="toggleTask('${task.id}')">
+            ${s.done ? '<svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M3 7L6 10L11 4" stroke="white" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>' : ''}
+          </button>
+          <div class="task-info">
+            <div class="task-name ${s.done?'done':''}">${task.name}</div>
+            ${s.done && s.date ? '<div class="task-date">Pagado el '+s.date+'</div>' : ''}
+            ${s.carriedOver && !s.done ? '<div class="task-carry">Arrastrado del mes anterior</div>' : ''}
+          </div>
+          <button class="edit-btn" onclick="startEdit(state.tasks.find(t=>t.id==='${task.id}'))" title="Editar">✎</button>
+          <div class="badge ${s.done?'paid':'pending'}">${s.done?'Pagado':'Pendiente'}</div>
+        </div>`;
+      }
+    });
+
+    html += '</div>';
+  });
+
+  // Add task
+  if (state.showAdd) {
+    html += `<div class="add-form">
+      <div class="title">Nueva responsabilidad</div>
+      <input value="${state.newName.replace(/"/g,'&quot;')}" 
+        oninput="state.newName=this.value"
+        onkeydown="if(event.key==='Enter')addTask()"
+        placeholder="Nombre del pago o responsabilidad..." id="add-input" />
+      <div class="add-pills">${catPills(state.newCat, 'add', 'setNewCat')}</div>
+      <div class="add-actions">
+        <button class="btn-add" onclick="addTask()">Agregar</button>
+        <button class="btn-add-cancel" onclick="state.showAdd=false;state.newName='';render()">Cancelar</button>
+      </div>
+    </div>`;
+  } else {
+    html += `<button class="add-trigger" onclick="state.showAdd=true;render();setTimeout(()=>{const i=document.getElementById('add-input');if(i)i.focus();},50)">
+      <span style="font-size:18px;line-height:1">+</span> Agregar responsabilidad
+    </button>`;
+  }
+
+  // Bottom actions
+  html += `<div class="bottom-actions">
+    <button class="btn-reset" onclick="resetMonth()">↻ Restablecer mes</button>
+    <button class="btn-today" onclick="goToday()" style="
+      background:${isCurrent?'#F3F4F6':'#4338CA'};
+      color:${isCurrent?'#9CA3AF':'white'};
+      opacity:${isCurrent?'0.6':'1'};
+    " ${isCurrent?'disabled':''}>◉ Ir al mes actual</button>
+  </div>`;
+
+  // Summary
+  html += `<div class="summary">
+    <div>
+      <div class="num" style="color:#4338CA">${state.tasks.length}</div>
+      <div class="label" style="color:#6366F1">Total</div>
+    </div>
+    <div class="divider"></div>
+    <div>
+      <div class="num" style="color:#059669">${completed}</div>
+      <div class="label" style="color:#10B981">Pagados</div>
+    </div>
+    <div class="divider"></div>
+    <div>
+      <div class="num" style="color:${pending>0?'#D97706':'#059669'}">${pending}</div>
+      <div class="label" style="color:${pending>0?'#F59E0B':'#10B981'}">Pendientes</div>
+    </div>
+  </div>`;
+
+  html += '</div>'; // main
+
+  document.getElementById('app').innerHTML = html;
+}
+
+// Global helpers for onclick in pills
+function setEditCat(cat) { state.editCategory = cat; render(); const inp = document.querySelector('.edit-form input'); if(inp) inp.focus(); }
+function setNewCat(cat) { state.newCat = cat; render(); const inp = document.getElementById('add-input'); if(inp) inp.focus(); }
+
+// Initial render
+render();
+</script>
+</body>
+</html>
